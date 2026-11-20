@@ -126,7 +126,8 @@ public class MainActivity extends Activity {
             try{
                 BluetoothDevice device=adapter.getRemoteDevice(mac);
                 socket=device.createRfcommSocketToServiceRecord(SPP);
-                adapter.cancelDiscovery();socket.connect();
+                // Printer is already paired; avoid cancelDiscovery(), which requires BLUETOOTH_SCAN on Android 12+.
+                socket.connect();
                 OutputStream out=socket.getOutputStream();out.write(bytes);out.flush();Thread.sleep(500);
             }catch(Exception e){error=e.getClass().getSimpleName()+": "+e.getMessage();}
             finally{if(socket!=null)try{socket.close();}catch(IOException ignored){}}
