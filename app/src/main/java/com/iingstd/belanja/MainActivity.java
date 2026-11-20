@@ -41,7 +41,7 @@ public class MainActivity extends Activity {
     private void render(){
         ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.setBackgroundColor(bg);
         root=column();root.setPadding(dp(18),dp(22),dp(18),dp(30));scroll.addView(root);setContentView(scroll);
-        TextView title=text("IING STD",30,true);title.setTextColor(green);root.addView(title);
+        TextView title=text("STD Belanja",30,true);title.setTextColor(green);root.addView(title);
         root.addView(text("BELANJA  •  CETAK STRUK",13,true),lp(-1,-2,3));
         TextView subtitle=text("Catat belanja, simpan offline, cetak Bluetooth 58 mm",13,false);subtitle.setTextColor(0xffb6c5ce);root.addView(subtitle,lp(-1,-2,12));
         Button add=button("+ Tambah barang");root.addView(add,lp(-1,54,22));add.setOnClickListener(v->editItem(-1));
@@ -149,9 +149,14 @@ public class MainActivity extends Activity {
     }
     private void previewReceipt(){
         if(items.isEmpty()){message("Daftar belanja masih kosong.");return;}
-        StringBuilder sb=new StringBuilder("IING STD\nDAFTAR BELANJA\n\n");
-        for(int k=0;k<items.size();k++){Item i=items.get(k);sb.append(k+1).append(". ").append(i.name).append("\n   ").append(i.qty).append(" ").append(i.unit);if(!i.price.isEmpty())sb.append(" @Rp").append(i.price);sb.append("\n");}
-        sb.append("\nJANGAN ADA YANG LUPA!");
+        StringBuilder sb=new StringBuilder("STD\\nDAFTAR BELANJA\\n\\n");
+        for(int k=0;k<items.size();k++){
+            Item i=items.get(k);
+            sb.append(k+1).append(". ").append(i.name).append("\\n");
+            sb.append("   ").append(i.qty).append(" ").append(i.unit).append("\\n");
+            sb.append("   Harga: Rp __________\\n\\n");
+        }
+        sb.append("------------------------------\\nTOTAL: Rp ______________\\nJANGAN ADA YANG LUPA!");
         new AlertDialog.Builder(this).setTitle("Pratinjau daftar cetak").setMessage(sb.toString()).setNegativeButton("Tutup",null).setPositiveButton("Cetak",(d,w)->printReceipt()).show();
     }
     private void printReceipt(){
@@ -178,34 +183,36 @@ public class MainActivity extends Activity {
     private byte[] receipt(){
         ByteArrayOutputStream out=new ByteArrayOutputStream();
         try{
-            out.write(new byte[]{0x1b,0x40}); // Reset ESC/POS
-            out.write(new byte[]{0x1b,0x61,0x01}); // Tengah
+            out.write(new byte[]{0x1b,0x40}); // Inisialisasi ESC/POS
+            out.write(new byte[]{0x1b,0x61,0x01}); // Rata tengah
             out.write(new byte[]{0x1b,0x45,0x01}); // Tebal
-            out.write(new byte[]{0x1d,0x21,0x11}); // Judul: 2x lebar dan tinggi
-            write(out,"IING STD\n");
-            out.write(new byte[]{0x1d,0x21,0x00}); // Ukuran normal
-            write(out,"BELANJA - CETAK STRUK\n");
+            out.write(new byte[]{0x1d,0x21,0x11}); // Judul 2x
+            write(out,"STD\\n");
+            out.write(new byte[]{0x1d,0x21,0x00});
+            write(out,"DAFTAR BELANJA\\n");
             out.write(new byte[]{0x1b,0x45,0x00});
-            write(out,new SimpleDateFormat("dd-MM-yyyy HH:mm",new Locale("id","ID")).format(new Date())+"\n");
-            write(out,"--------------------------------\n");
+            write(out,new SimpleDateFormat("dd-MM-yyyy HH:mm",new Locale("id","ID")).format(new Date())+"\\n");
+            write(out,"--------------------------------\\n");
             out.write(new byte[]{0x1b,0x61,0x00}); // Kiri
             for(int k=0;k<items.size();k++){
                 Item i=items.get(k);
-                out.write(new byte[]{0x1b,0x45,0x01}); // Nama tebal
-                out.write(new byte[]{0x1d,0x21,0x10}); // Nama 2x lebar, tinggi normal
-                // Lebar 58 mm umumnya 32 kolom normal / 16 kolom saat double width.
+                out.write(new byte[]{0x1b,0x45,0x01});
+                // Normal-width bold fits more text on 58mm than double-width.
                 String name=(k+1)+". "+safe(i.name).toUpperCase(new Locale("id","ID"));
-                for(String line:wrapReceipt(name,16))write(out,line+"\n");
-                out.write(new byte[]{0x1d,0x21,0x00});
-                write(out,"   "+safe(i.qty)+" "+safe(i.unit)+(i.price.isEmpty()?"":" @Rp"+safe(i.price))+"\n");
+                for(String line:wrapReceipt(name,32))write(out,line+"\\n");
+                String qty="   "+safe(i.qty)+" "+safe(i.unit);
+                for(String line:wrapReceipt(qty,32))write(out,line+"\\n");
                 out.write(new byte[]{0x1b,0x45,0x00});
+                write(out,"   Harga: Rp ______________\\n");
+                if(k<items.size()-1)write(out,"--------------------------------\\n");
             }
-            write(out,"--------------------------------\n");
-            out.write(new byte[]{0x1b,0x61,0x01});
+            write(out,"--------------------------------\\n");
             out.write(new byte[]{0x1b,0x45,0x01});
-            write(out,"JANGAN ADA YANG LUPA!\n");
+            write(out,"TOTAL: Rp ____________________\\n");
+            out.write(new byte[]{0x1b,0x61,0x01});
+            write(out,"JANGAN ADA YANG LUPA!\\n");
             out.write(new byte[]{0x1b,0x45,0x00});
-            write(out,"\n\n\n");
+            write(out,"\\n\\n\\n");
         }catch(IOException ignored){}
         return out.toByteArray();
     }
