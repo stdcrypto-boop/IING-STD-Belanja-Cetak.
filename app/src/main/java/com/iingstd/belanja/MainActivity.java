@@ -37,7 +37,7 @@ public class MainActivity extends Activity {
     private TextView text(String value,int size,boolean bold){TextView t=new TextView(this);t.setText(value);t.setTextSize(size);t.setTextColor(Color.WHITE);if(bold)t.setTypeface(null,Typeface.BOLD);return t;}
     private LinearLayout column(){LinearLayout l=new LinearLayout(this);l.setOrientation(LinearLayout.VERTICAL);return l;}
     private LinearLayout.LayoutParams lp(int w,int h,int top){LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(w<0?w:dp(w),h<0?h:dp(h));p.topMargin=dp(top);return p;}
-    private Button button(String label){Button b=new Button(this);b.setText(label);b.setTextAllCaps(false);b.setTextColor(Color.WHITE);b.setBackground(shape(green));return b;}
+    private Button button(String label){Button b=new Button(this);b.setText(label);b.setAllCaps(false);b.setTextColor(Color.WHITE);b.setBackground(shape(green));return b;}
     private void render(){
         ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.setBackgroundColor(bg);
         root=column();root.setPadding(dp(18),dp(22),dp(18),dp(30));scroll.addView(root);setContentView(scroll);
