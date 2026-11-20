@@ -45,6 +45,7 @@ public class MainActivity extends Activity {
         root.addView(text("BELANJA  •  CETAK STRUK",13,true),lp(-1,-2,3));
         TextView subtitle=text("Catat belanja, simpan offline, cetak Bluetooth 58 mm",13,false);subtitle.setTextColor(0xffb6c5ce);root.addView(subtitle,lp(-1,-2,12));
         Button add=button("+ Tambah barang");root.addView(add,lp(-1,54,22));add.setOnClickListener(v->editItem(-1));
+        Button bulk=button("+ Tambah banyak barang sekaligus");bulk.setBackground(shape(panel));root.addView(bulk,lp(-1,54,10));bulk.setOnClickListener(v->addManyItems());
         TextView heading=text("DAFTAR BELANJA",17,true);root.addView(heading,lp(-1,-2,24));
         list=column();root.addView(list,lp(-1,-2,10));
         totalLabel=text("",15,true);totalLabel.setTextColor(green);root.addView(totalLabel,lp(-1,-2,15));
@@ -86,6 +87,46 @@ public class MainActivity extends Activity {
             if(n.isEmpty()||q.isEmpty()){Toast.makeText(this,"Isi nama dan jumlah barang",Toast.LENGTH_SHORT).show();return;}
             Item item=old==null?new Item():old;item.name=n;item.qty=q;item.unit=u.isEmpty()?"pcs":u;item.price=price.getText().toString().trim();if(old==null)items.add(item);save();refresh();dialog.dismiss();
         }));dialog.show();
+    }
+    private void addManyItems(){
+        LinearLayout form=column();
+        form.setPadding(dp(20),dp(12),dp(20),0);
+        TextView help=text("Satu barang per baris: nama, jumlah, satuan\\nContoh:\\nBeras, 2, kg\\nMinyak sayur, 1, liter\\nTelur, 0.5, kg",14,false);
+        help.setTextColor(Color.DKGRAY);
+        form.addView(help);
+        EditText lines=new EditText(this);
+        lines.setSingleLine(false);
+        lines.setMinLines(6);
+        lines.setGravity(Gravity.TOP);
+        lines.setTextColor(Color.BLACK);
+        lines.setHint("Beras, 2, kg\\nMinyak sayur, 1, liter\\nTelur, 0.5, kg");
+        lines.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_FLAG_MULTI_LINE|InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        form.addView(lines);
+        AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Tambah banyak barang")
+            .setView(form).setNegativeButton("Batal",null)
+            .setPositiveButton("Simpan semua",null).create();
+        dialog.setOnShowListener(d->dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{
+            String raw=lines.getText().toString().trim();
+            if(raw.isEmpty()){Toast.makeText(this,"Tulis daftar barang dahulu",Toast.LENGTH_SHORT).show();return;}
+            String[] rows=raw.split("\\r?\\n");
+            ArrayList<Item> parsed=new ArrayList<>();
+            for(int k=0;k<rows.length;k++){
+                String row=rows[k].trim();
+                if(row.isEmpty())continue;
+                String[] parts=row.split(",",-1);
+                if(parts.length<2||parts.length>3||parts[0].trim().isEmpty()||parts[1].trim().isEmpty()){
+                    message("Periksa baris "+(k+1)+": "+row+"\\nFormat: nama, jumlah, satuan");return;
+                }
+                Item item=new Item();
+                item.name=parts[0].trim();item.qty=parts[1].trim();
+                item.unit=parts.length==3&&!parts[2].trim().isEmpty()?parts[2].trim():"pcs";
+                item.price="";item.done=false;parsed.add(item);
+            }
+            if(parsed.isEmpty()){message("Belum ada barang yang bisa disimpan.");return;}
+            items.addAll(parsed);save();refresh();dialog.dismiss();
+            Toast.makeText(this,parsed.size()+" barang berhasil ditambahkan",Toast.LENGTH_LONG).show();
+        }));
+        dialog.show();
     }
     private void load(){printerMac=getPreferences(0).getString("printerMac","");try{JSONArray a=new JSONArray(getPreferences(0).getString("items","[]"));for(int k=0;k<a.length();k++)items.add(Item.from(a.getJSONObject(k)));}catch(Exception ignored){}}
     private void save(){JSONArray a=new JSONArray();for(Item i:items){try{a.put(i.json());}catch(Exception ignored){}}getPreferences(0).edit().putString("items",a.toString()).apply();}
