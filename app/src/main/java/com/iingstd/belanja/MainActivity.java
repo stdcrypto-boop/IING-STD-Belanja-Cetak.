@@ -137,21 +137,48 @@ public class MainActivity extends Activity {
     private byte[] receipt(){
         ByteArrayOutputStream out=new ByteArrayOutputStream();
         try{
-            out.write(new byte[]{0x1b,0x40}); // initialize ESC/POS
-            out.write(new byte[]{0x1b,0x61,0x01}); // center
-            write(out,"IING STD\nDAFTAR BELANJA\n");
+            out.write(new byte[]{0x1b,0x40}); // Reset ESC/POS
+            out.write(new byte[]{0x1b,0x61,0x01}); // Tengah
+            out.write(new byte[]{0x1b,0x45,0x01}); // Tebal
+            out.write(new byte[]{0x1d,0x21,0x11}); // Judul: 2x lebar dan tinggi
+            write(out,"IING STD\n");
+            out.write(new byte[]{0x1d,0x21,0x00}); // Ukuran normal
+            write(out,"BELANJA - CETAK STRUK\n");
+            out.write(new byte[]{0x1b,0x45,0x00});
             write(out,new SimpleDateFormat("dd-MM-yyyy HH:mm",new Locale("id","ID")).format(new Date())+"\n");
             write(out,"--------------------------------\n");
-            out.write(new byte[]{0x1b,0x61,0x00}); // left
+            out.write(new byte[]{0x1b,0x61,0x00}); // Kiri
             for(int k=0;k<items.size();k++){
-                Item i=items.get(k);write(out,(k+1)+". "+safe(i.name)+"\n");
+                Item i=items.get(k);
+                out.write(new byte[]{0x1b,0x45,0x01}); // Nama tebal
+                out.write(new byte[]{0x1d,0x21,0x10}); // Nama 2x lebar, tinggi normal
+                // Lebar 58 mm umumnya 32 kolom normal / 16 kolom saat double width.
+                String name=(k+1)+". "+safe(i.name).toUpperCase(new Locale("id","ID"));
+                for(String line:wrapReceipt(name,16))write(out,line+"\n");
+                out.write(new byte[]{0x1d,0x21,0x00});
                 write(out,"   "+safe(i.qty)+" "+safe(i.unit)+(i.price.isEmpty()?"":" @Rp"+safe(i.price))+"\n");
+                out.write(new byte[]{0x1b,0x45,0x00});
             }
             write(out,"--------------------------------\n");
             out.write(new byte[]{0x1b,0x61,0x01});
-            write(out,"JANGAN ADA YANG LUPA!\n\n\n\n");
+            out.write(new byte[]{0x1b,0x45,0x01});
+            write(out,"JANGAN ADA YANG LUPA!\n");
+            out.write(new byte[]{0x1b,0x45,0x00});
+            write(out,"\n\n\n");
         }catch(IOException ignored){}
         return out.toByteArray();
+    }
+    private ArrayList<String> wrapReceipt(String value,int max){
+        ArrayList<String> lines=new ArrayList<>();
+        String remaining=value.trim();
+        while(remaining.length()>max){
+            int split=remaining.lastIndexOf(' ',max);
+            if(split<=0)split=max;
+            lines.add(remaining.substring(0,split).trim());
+            remaining=remaining.substring(split).trim();
+        }
+        if(!remaining.isEmpty())lines.add(remaining);
+        return lines;
     }
     private String safe(String s){return s.replaceAll("[\\r\\n\\t]"," ");}
     private void write(ByteArrayOutputStream out,String s)throws IOException{out.write(s.getBytes(Charset.forName("CP437")));}
