@@ -91,7 +91,7 @@ public class MainActivity extends Activity {
     private void addManyItems(){
         LinearLayout form=column();
         form.setPadding(dp(20),dp(12),dp(20),0);
-        TextView help=text("Satu barang per baris: nama, jumlah, satuan\\nContoh:\\nBeras, 2, kg\\nMinyak sayur, 1, liter\\nTelur, 0.5, kg",14,false);
+        TextView help=text("Satu barang per baris: nama, jumlah, satuan\nContoh:\nBeras, 2, kg\nMinyak sayur, 1, liter\nTelur, 0.5, kg",14,false);
         help.setTextColor(Color.DKGRAY);
         form.addView(help);
         EditText lines=new EditText(this);
@@ -99,7 +99,7 @@ public class MainActivity extends Activity {
         lines.setMinLines(6);
         lines.setGravity(Gravity.TOP);
         lines.setTextColor(Color.BLACK);
-        lines.setHint("Beras, 2, kg\\nMinyak sayur, 1, liter\\nTelur, 0.5, kg");
+        lines.setHint("Beras, 2, kg\nMinyak sayur, 1, liter\nTelur, 0.5, kg");
         lines.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_FLAG_MULTI_LINE|InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
         form.addView(lines);
         AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Tambah banyak barang")
@@ -108,14 +108,14 @@ public class MainActivity extends Activity {
         dialog.setOnShowListener(d->dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{
             String raw=lines.getText().toString().trim();
             if(raw.isEmpty()){Toast.makeText(this,"Tulis daftar barang dahulu",Toast.LENGTH_SHORT).show();return;}
-            String[] rows=raw.split("\\r?\\n");
+            String[] rows=raw.split("\\r?\n");
             ArrayList<Item> parsed=new ArrayList<>();
             for(int k=0;k<rows.length;k++){
                 String row=rows[k].trim();
                 if(row.isEmpty())continue;
                 String[] parts=row.split(",",-1);
                 if(parts.length<2||parts.length>3||parts[0].trim().isEmpty()||parts[1].trim().isEmpty()){
-                    message("Periksa baris "+(k+1)+": "+row+"\\nFormat: nama, jumlah, satuan");return;
+                    message("Periksa baris "+(k+1)+": "+row+"\nFormat: nama, jumlah, satuan");return;
                 }
                 Item item=new Item();
                 item.name=parts[0].trim();item.qty=parts[1].trim();
@@ -149,14 +149,14 @@ public class MainActivity extends Activity {
     }
     private void previewReceipt(){
         if(items.isEmpty()){message("Daftar belanja masih kosong.");return;}
-        StringBuilder sb=new StringBuilder("STD\\nDAFTAR BELANJA\\n\\n");
+        StringBuilder sb=new StringBuilder("STD\nDAFTAR BELANJA\n\n");
         for(int k=0;k<items.size();k++){
             Item i=items.get(k);
-            sb.append(k+1).append(". ").append(i.name).append("\\n");
-            sb.append("   ").append(i.qty).append(" ").append(i.unit).append("\\n");
-            sb.append("   Harga: Rp __________\\n\\n");
+            sb.append(k+1).append(". ").append(i.name).append("\n");
+            sb.append("   ").append(i.qty).append(" ").append(i.unit).append("\n");
+            sb.append("   Harga: Rp __________\n\n");
         }
-        sb.append("------------------------------\\nTOTAL: Rp ______________\\nJANGAN ADA YANG LUPA!");
+        sb.append("------------------------------\nTOTAL: Rp ______________\nJANGAN ADA YANG LUPA!");
         new AlertDialog.Builder(this).setTitle("Pratinjau daftar cetak").setMessage(sb.toString()).setNegativeButton("Tutup",null).setPositiveButton("Cetak",(d,w)->printReceipt()).show();
     }
     private void printReceipt(){
@@ -187,32 +187,32 @@ public class MainActivity extends Activity {
             out.write(new byte[]{0x1b,0x61,0x01}); // Rata tengah
             out.write(new byte[]{0x1b,0x45,0x01}); // Tebal
             out.write(new byte[]{0x1d,0x21,0x11}); // Judul 2x
-            write(out,"STD\\n");
+            write(out,"STD\n");
             out.write(new byte[]{0x1d,0x21,0x00});
-            write(out,"DAFTAR BELANJA\\n");
+            write(out,"DAFTAR BELANJA\n");
             out.write(new byte[]{0x1b,0x45,0x00});
-            write(out,new SimpleDateFormat("dd-MM-yyyy HH:mm",new Locale("id","ID")).format(new Date())+"\\n");
-            write(out,"--------------------------------\\n");
+            write(out,new SimpleDateFormat("dd-MM-yyyy HH:mm",new Locale("id","ID")).format(new Date())+"\n");
+            write(out,"--------------------------------\n");
             out.write(new byte[]{0x1b,0x61,0x00}); // Kiri
             for(int k=0;k<items.size();k++){
                 Item i=items.get(k);
                 out.write(new byte[]{0x1b,0x45,0x01});
                 // Normal-width bold fits more text on 58mm than double-width.
                 String name=(k+1)+". "+safe(i.name).toUpperCase(new Locale("id","ID"));
-                for(String line:wrapReceipt(name,32))write(out,line+"\\n");
+                for(String line:wrapReceipt(name,32))write(out,line+"\n");
                 String qty="   "+safe(i.qty)+" "+safe(i.unit);
-                for(String line:wrapReceipt(qty,32))write(out,line+"\\n");
+                for(String line:wrapReceipt(qty,32))write(out,line+"\n");
                 out.write(new byte[]{0x1b,0x45,0x00});
-                write(out,"   Harga: Rp ______________\\n");
-                if(k<items.size()-1)write(out,"--------------------------------\\n");
+                write(out,"   Harga: Rp ______________\n");
+                if(k<items.size()-1)write(out,"--------------------------------\n");
             }
-            write(out,"--------------------------------\\n");
+            write(out,"--------------------------------\n");
             out.write(new byte[]{0x1b,0x45,0x01});
-            write(out,"TOTAL: Rp ____________________\\n");
+            write(out,"TOTAL: Rp ____________________\n");
             out.write(new byte[]{0x1b,0x61,0x01});
-            write(out,"JANGAN ADA YANG LUPA!\\n");
+            write(out,"JANGAN ADA YANG LUPA!\n");
             out.write(new byte[]{0x1b,0x45,0x00});
-            write(out,"\\n\\n\\n");
+            write(out,"\n\n\n");
         }catch(IOException ignored){}
         return out.toByteArray();
     }
@@ -228,7 +228,7 @@ public class MainActivity extends Activity {
         if(!remaining.isEmpty())lines.add(remaining);
         return lines;
     }
-    private String safe(String s){return s.replaceAll("[\\r\\n\\t]"," ");}
+    private String safe(String s){return s.replaceAll("[\\r\n\\t]"," ");}
     private void write(ByteArrayOutputStream out,String s)throws IOException{out.write(s.getBytes(Charset.forName("CP437")));}
     private void message(String msg){new AlertDialog.Builder(this).setMessage(msg).setPositiveButton("OK",null).show();}
 }
